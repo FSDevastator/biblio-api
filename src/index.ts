@@ -62,10 +62,67 @@ async function getTousLesLivres() {
     return prisma.livre.findMany();
 }
 
+async function getLivresDispo() {
+    return prisma.livre.findMany({
+        where: { disponible:true }
+    });
+}
+
+async function getLivreParId(id:number) {
+
+    return prisma.livre.findUnique({
+        where: {id}
+    })
+    
+}
+
+async function chercherParAuteur(motCle: string) {
+    return prisma.livre.findMany({
+        where: {
+            auteur: { contains: motCle, mode:"insensitive"}
+        }
+    })
+    
+}
+
+async function marquerIndispo(id: number) {
+    return prisma.livre.update({
+        where: {id},
+        data:{disponible : false},
+    });
+}
+
+async function corrigerAnnee(id:number, nouvelleAnnee: number) {
+    return prisma.livre.update({
+        where: {id},
+        data: {annee:nouvelleAnnee},
+    });
+}
+
+async function supprimerLivre(id:number) {
+    
+    
+}
+
+
+
 async function main() {
 
     console .log("\n--- Tous les livres ---");
     console.log(await getTousLesLivres());
+
+    console .log("\n--- Livres disponibles ---");
+    console .log( await getLivresDispo ());
+
+    console .log("\n--- Livre #1 ---");
+    console .log( await getLivreParId (1) );
+
+    console .log ("\n--- Recherche : ’jonny ’ ---");
+    console .log ( await chercherParAuteur ("jonny"));
+
+    console .log(await marquerIndispo(1));
+    console .log(await corrigerAnnee(2, 2024));
+
     
     await prisma.$disconnect();
 }
