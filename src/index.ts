@@ -1,4 +1,4 @@
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime/client";
 import prisma from "../utils/prisma.js"
 
 async function seed() {
@@ -154,6 +154,8 @@ async function rendreLivre(idEmprunt:number) {
         } else {
             throw error
         }
+
+        return
     }
     
     
@@ -163,6 +165,12 @@ async function rendreLivre(idEmprunt:number) {
             data: { disponible: true}
         })
     } catch(error) {
+        if (error instanceof PrismaClientValidationError) {
+            console.log("Opération échouée.  Vérifiez les arguments fournies pour la MAJ.")
+        }
+        else if (error instanceof PrismaClientKnownRequestError && error.code === "P2025") {
+            console.log("Opération échouée. Livre introuvable pour la MAJ.")
+        }
 
     }
     
