@@ -1,3 +1,4 @@
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import prisma from "../utils/prisma.js"
 
 async function seed() {
@@ -100,11 +101,74 @@ async function corrigerAnnee(id:number, nouvelleAnnee: number) {
 }
 
 async function supprimerLivre(id:number) {
-    
+    return prisma.livre.delete({
+        where: {id: id}
+    })
     
 }
 
+async function supprimerAnciens(annee:number) {
+    return prisma.livre.deleteMany({
+        where: {
+            annee: { lt: annee}
+        }
+    })
+}
 
+async function emprunterLivre(id:number, nomMembre:string) {
+    const emprunt = await prisma.emprunt.create({
+        data:{
+            empruntePar: nomMembre,
+            livre: {
+                connect: {id}
+            }
+        }
+    })
+
+    if (emprunt === null || emprunt ===undefined) { throw new Error("Un emprunt n'a pu être effectué.")}
+
+    await marquerIndispo(id)
+
+    return emprunt
+}
+
+async function listerEmprunts() {
+
+    return await prisma.emprunt.findMany({
+        include: {livre:true}
+    })
+    
+}
+
+async function rendreLivre(idEmprunt:number) {
+
+    let resultat = null;
+
+    try {
+        resultat = await prisma.emprunt.delete({
+            where:{id:idEmprunt}
+        })
+    } catch (error) {
+        if (error instanceof PrismaClientKnownRequestError && error.code==="P2025") {
+            console.log("L'opération a échouée: un emprunt n'a pas été trouvé pour la suppresion.  Verifiez votre ID.")
+        } else {
+            throw error
+        }
+    }
+    
+    
+    try {
+        await prisma.livre.update({
+            where: { id: resultat.livreId ?? null},
+            data: { disponible: true}
+        })
+    } catch(error) {
+
+    }
+    
+    
+    
+}
 
 async function main() {
 
@@ -122,6 +186,15 @@ async function main() {
 
     console .log(await marquerIndispo(1));
     console .log(await corrigerAnnee(2, 2024));
+
+    console.log(await marquerIndispo(1))
+
+    console.log(await corrigerAnnee(2,1901))
+
+    //console.log(await emprunterLivre(1,'Amit Chandel'))
+
+    console.log(await listerEmprunts())
+
 
     
     await prisma.$disconnect();
